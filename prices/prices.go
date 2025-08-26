@@ -1,22 +1,28 @@
 package prices
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 
 	"example.com/price-cal/conversion"
+	"example.com/price-cal/filemanager"
 )
 
 type TaxIncludedPriceJob struct {
 	TaxRate           float64
 	InputPrices       []float64
-	TaxIncludedPrices map[string]float64
+	TaxIncludedPrices map[string]string
 }
 
 // Method to read the prices values.
 // This pointer here is imp, so that we can set the value in the InputPrices and not the copy of InputPrices!
 func (job *TaxIncludedPriceJob) LoadPricesData() {
+
+	lines, err := filemanager.ReadLines("prices.txt")
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	// CONVERSION OF STIRING PRICE TO FLOAT ------
 	// prices := make([]float64, len(lines))
@@ -25,14 +31,11 @@ func (job *TaxIncludedPriceJob) LoadPricesData() {
 
 	if err != nil {
 		fmt.Println(err)
-		file.Close()
 		return
 	}
 
 	// CONVERSION OF STIRING PRICE TO FLOAT ------
 	job.InputPrices = prices
-
-	file.Close()
 }
 
 // Method - Adding a reciever argument makes this method.
@@ -48,10 +51,14 @@ func (job *TaxIncludedPriceJob) Process() {
 
 	for _, price := range job.InputPrices {
 		taxIncludedPrice := price * (1 + job.TaxRate)
-		result[fmt.Sprintf("%.1f", price)] = fmt.Sprintf("%.2f", taxIncludedPrice)
+		result[fmt.Sprintf("%.2f", price)] = fmt.Sprintf("%.2f", taxIncludedPrice)
 	}
 
 	fmt.Println(result)
+
+	job.TaxIncludedPrices = result
+
+	filemanager.WriteJSON(fmt.Sprintf("result_%.0f.json", job.TaxRate*100), job)
 }
 
 func NewTaxIncludedPriceJob(taxRate float64) *TaxIncludedPriceJob {
